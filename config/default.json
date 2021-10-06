@@ -1,0 +1,5 @@
+{
+	"port": 5000,
+	"mongoUri": "mongodb+srv://ocheweedno:qwerty1@cluster0.j5xtg.mongodb.net/expenseApp?authSource=admin&replicaSet=atlas-vonxtc-shard-0&w=majority&readPreference=primary&appname=MongoDB%20Compass&retryWrites=true&ssl=true",
+	"jwtSecret": "secretWord"
+}

@@ -1,12 +1,16 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
+import { AuthContext } from "../context/AuthContext";
 import { GlobalContext } from "../context/GlobalState";
 import Select from "react-select";
 /* import Emoji from "a11y-react-emoji"; */
+import { useHttp } from "../hooks/http.hooks";
+import { getTrasactions, putTransaction } from "../api/methodCalls";
+import { Loader } from "./loader";
 
 export const AddTransaction = () => {
-	const [text, setText] = useState("");
+	const [description, setDescription] = useState("");
 	const [amount, setAmount] = useState("");
-	const [expand, setExpand] = useState(true);
+	const [loader, setLoader] = useState(false);
 
 	const date = new Date().toISOString().slice(0, 10);
 
@@ -35,33 +39,78 @@ export const AddTransaction = () => {
 	};
 	//
 
-	const { addTransaction } = useContext(GlobalContext);
+	const { addTransaction, setTransactions, transactions } =
+		useContext(GlobalContext);
 
 	const onSubmit = (e) => {
 		e.preventDefault();
 
 		const newTransaction = {
 			id: Math.floor(Math.random() * 100000000),
-			text,
+			description,
 			amount: +amount,
 			...category,
 			date,
 		};
 
-		addTransaction(newTransaction);
-		setText("");
+		/* addTransaction(newTransaction); */
+		setDescription("");
 		setAmount("");
 		resetForm();
 	};
+
 	const divStyle = {
 		display: "flex",
 		justifyContent: "space-between",
 	};
 
+	const auth = useContext(AuthContext);
+	const pressHandler = () => {
+		setLoader(true);
+		putTransaction(
+			{
+				id: Math.floor(Math.random() * 100000000),
+				category: category["value"],
+				description: description,
+				amount: amount,
+				date: date,
+			},
+			auth.token
+		)
+			.then((res) => {
+				getTrasactions(auth.token)
+					.then((res) => {
+						setTransactions([...res.data]);
+						setLoader(false);
+					})
+					.catch((err) => {
+						console.log(err);
+						setLoader(false);
+					});
+			})
+			.catch((err) => {
+				console.log(err);
+				setLoader(false);
+			});
+	};
+	useEffect(() => {
+		setLoader(true);
+		getTrasactions(auth.token)
+			.then((res) => {
+				setTransactions([...res.data]);
+				setLoader(false);
+			})
+			.catch((err) => {
+				console.log(err);
+				setLoader(false);
+			});
+	}, []);
+
 	return (
 		<>
 			<h3>Добавить операцию</h3>
-			<form onSubmit={onSubmit} className={expand ? "form" : "none"}>
+			<Loader loader={loader} />
+			<form onSubmit={onSubmit} className="form">
 				<div className="form-control">
 					<label htmlFor="amount">
 						Категория <br />
@@ -93,8 +142,8 @@ export const AddTransaction = () => {
 					<label htmlFor="text">Описание</label>
 					<input
 						type="text"
-						value={text}
-						onChange={(e) => setText(e.target.value)}
+						value={description}
+						onChange={(e) => setDescription(e.target.value)}
 						placeholder="Описание..."
 					/>
 				</div>
@@ -109,7 +158,9 @@ export const AddTransaction = () => {
 						placeholder="Сумма..."
 					/>
 				</div>
-				<button className="btn">Добавить</button>
+				<button className="btn" onClick={pressHandler}>
+					Добавить
+				</button>
 			</form>
 		</>
 	);
